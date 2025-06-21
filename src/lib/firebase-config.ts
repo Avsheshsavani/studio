@@ -13,7 +13,12 @@ const firebaseConfig = {
   measurementId: "G-1QEEC4L0SL"
 };
 
-// Initialize Firebase
+// This guard clause ensures that the config object is populated before initialization.
+if (!firebaseConfig.apiKey) {
+    throw new Error("Firebase configuration is missing. Check src/lib/firebase-config.ts");
+}
+
+// Initialize Firebase using a more robust pattern
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
