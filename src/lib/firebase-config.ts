@@ -2,9 +2,10 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// IMPORTANT: Create a .env.local file in the root of your project
-// and add your Firebase project's configuration there.
-// Example .env.local file:
+// IMPORTANT: Add your Firebase project's configuration to the .env
+// file in the root of your project. This file has been created for you.
+// You can find these values in your Firebase project settings.
+// Example .env file:
 // NEXT_PUBLIC_FIREBASE_API_KEY=AIza...
 // NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
 // NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
