@@ -1,0 +1,77 @@
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreVertical, Trash2 } from "lucide-react";
+import type { Note } from "@/lib/types";
+
+interface NoteCardShellProps {
+  note: Note;
+  onDelete: (id: string) => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+export function NoteCardShell({
+  note,
+  onDelete,
+  icon,
+  children,
+}: NoteCardShellProps) {
+  const formattedDate = new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(note.timestamp));
+
+  return (
+    <Card className="flex flex-col h-full">
+      <CardHeader className="flex flex-row items-start gap-4 space-y-0">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted flex-shrink-0">
+          {icon}
+        </div>
+        <div className="flex-1">
+          <CardTitle className="text-lg">{note.title}</CardTitle>
+          <CardDescription>{formattedDate}</CardDescription>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => onDelete(note.id)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+      <CardContent className="flex-1">{children}</CardContent>
+      {note.tags.length > 0 && (
+        <CardFooter className="flex flex-wrap gap-1">
+          {note.tags.map((tag) => (
+            <Badge key={tag} variant="secondary">
+              {tag}
+            </Badge>
+          ))}
+        </CardFooter>
+      )}
+    </Card>
+  );
+}
