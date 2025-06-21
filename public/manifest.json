@@ -1,0 +1,17 @@
+{
+  "name": "FeatherNote",
+  "short_name": "FeatherNote",
+  "description": "A versatile note-taking app for simple, secure, and organized thoughts.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef8ff",
+  "theme_color": "#3498db",
+  "orientation": "portrait"
+}

@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
+import { PwaHandler } from "@/components/pwa-handler";
 
 export const metadata: Metadata = {
   title: "FeatherNote",
@@ -29,6 +30,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
           rel="stylesheet"
         />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
+        <meta name="theme-color" content="#3498db" />
       </head>
       <body
         className={cn(
@@ -42,6 +46,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <PwaHandler />
             {children}
             <Toaster />
           </AuthProvider>
