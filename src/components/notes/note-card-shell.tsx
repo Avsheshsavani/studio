@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -16,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreVertical, Trash2 } from "lucide-react";
 import type { Note } from "@/lib/types";
+import { useState, useEffect } from "react";
 
 interface NoteCardShellProps {
   note: Note;
@@ -30,10 +33,18 @@ export function NoteCardShell({
   icon,
   children,
 }: NoteCardShellProps) {
-  const formattedDate = new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(note.timestamp));
+  const [formattedDate, setFormattedDate] = useState("");
+
+  useEffect(() => {
+    // This will only run on the client, after the initial render,
+    // preventing the server/client mismatch.
+    setFormattedDate(
+      new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(note.timestamp))
+    );
+  }, [note.timestamp]);
 
   return (
     <Card className="flex flex-col h-full">
@@ -43,7 +54,7 @@ export function NoteCardShell({
         </div>
         <div className="flex-1">
           <CardTitle className="text-lg">{note.title}</CardTitle>
-          <CardDescription>{formattedDate}</CardDescription>
+          <CardDescription>{formattedDate || <>&nbsp;</>}</CardDescription>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
