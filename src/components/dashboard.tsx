@@ -1,7 +1,7 @@
 "use client";
 
 import { Feather, Plus, Search, LogOut, ArrowLeft } from "lucide-react";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { Note, NoteType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,8 @@ import SimpleNoteCard from "./notes/simple-note-card";
 import { useAuth } from "@/contexts/auth-context";
 import { CategoryDirectory } from "./category-directory";
 import { EditNoteDialog } from "./edit-note-dialog";
-
-interface DashboardProps {
-  initialNotes: Note[];
-}
+import { getNotes, addNote as addNoteToDb, updateNote as updateNoteInDb, deleteNote as deleteNoteFromDb } from "@/services/note-service";
+import { Skeleton } from "./ui/skeleton";
 
 const categoryDetails: Record<NoteType, { name: string }> = {
   simple: { name: "Simple Notes" },
@@ -26,8 +24,20 @@ const categoryDetails: Record<NoteType, { name: string }> = {
   financial: { name: "Financial Notes" },
 };
 
-export function Dashboard({ initialNotes }: DashboardProps) {
-  const [notes, setNotes] = useState<Note[]>(initialNotes);
+function DashboardSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+    </div>
+  )
+}
+
+export function Dashboard() {
+  const { user, logout } = useAuth();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isNewNoteDialogOpen, setIsNewNoteDialogOpen] = useState(false);
   const [isEditNoteDialogOpen, setIsEditNoteDialogOpen] = useState(false);
@@ -35,20 +45,40 @@ export function Dashboard({ initialNotes }: DashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<NoteType | null>(
     null
   );
-  const { logout } = useAuth();
 
-  const addNote = (note: Note) => {
-    setNotes((prevNotes) => [note, ...prevNotes]);
+  useEffect(() => {
+    if (user) {
+      const fetchNotes = async () => {
+        setIsLoading(true);
+        try {
+          const userNotes = await getNotes();
+          setNotes(userNotes);
+        } catch (error) {
+          console.error("Failed to fetch notes:", error);
+          // Optionally, show a toast to the user
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchNotes();
+    }
+  }, [user]);
+
+  const addNote = async (note: Omit<Note, 'id'>) => {
+    const newNote = await addNoteToDb(note);
+    setNotes((prevNotes) => [newNote, ...prevNotes]);
     // After adding, switch to the category of the new note
-    setSelectedCategory(note.type);
+    setSelectedCategory(newNote.type);
   };
 
-  const updateNote = (updatedNote: Note) => {
+  const updateNote = async (updatedNote: Note) => {
+    await updateNoteInDb(updatedNote);
     setNotes(notes => notes.map(n => n.id === updatedNote.id ? updatedNote : n));
     setEditingNote(null);
   };
 
-  const deleteNote = (id: string) => {
+  const deleteNote = async (id: string) => {
+    await deleteNoteFromDb(id);
     setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
   };
   
@@ -72,15 +102,25 @@ export function Dashboard({ initialNotes }: DashboardProps) {
     return categoryNotes.filter(
       (note) =>
         note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.tags.some((tag) =>
+        (note.tags && note.tags.some((tag) =>
           tag.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        ))
     );
   }, [notesByCategory, selectedCategory, searchQuery]);
 
   const renderNotesGrid = () => {
     if (!selectedCategory) return null;
 
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+        </div>
+      );
+    }
+    
     if (filteredNotes.length > 0) {
       return (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -142,18 +182,23 @@ export function Dashboard({ initialNotes }: DashboardProps) {
     }
   };
 
-  const renderCategoryDirectories = () => (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {(Object.keys(categoryDetails) as NoteType[]).map((category) => (
-        <CategoryDirectory
-          key={category}
-          category={category}
-          noteCount={(notesByCategory[category] || []).length}
-          onClick={() => setSelectedCategory(category)}
-        />
-      ))}
-    </div>
-  );
+  const renderCategoryDirectories = () => {
+    if (isLoading) {
+        return <DashboardSkeleton />;
+    }
+    return (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {(Object.keys(categoryDetails) as NoteType[]).map((category) => (
+            <CategoryDirectory
+            key={category}
+            category={category}
+            noteCount={(notesByCategory[category] || []).length}
+            onClick={() => setSelectedCategory(category)}
+            />
+        ))}
+        </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">

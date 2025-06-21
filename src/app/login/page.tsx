@@ -14,23 +14,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { Feather } from "lucide-react";
+import { Feather, Loader2 } from "lucide-react";
+import { FirebaseError } from "firebase/app";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("demo@feathernote.com");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("password");
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(password);
-    if (!success) {
+    setIsLoading(true);
+    try {
+      await login(email, password);
+      // The redirect is handled by the auth context
+    } catch (error) {
+      let title = "Login Failed";
+      let description = "An unexpected error occurred. Please try again.";
+
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+          case "auth/invalid-credential":
+            title = "Invalid Credentials";
+            description = "The email or password you entered is incorrect.";
+            break;
+          case "auth/invalid-email":
+            title = "Invalid Email";
+            description = "Please enter a valid email address.";
+            break;
+          default:
+            description = "An error occurred. Please try again later.";
+        }
+      }
+      
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: "Incorrect password. Hint: try 'password'.",
+        title: title,
+        description: description,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -60,7 +87,6 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled
               />
             </div>
             <div className="space-y-2">
@@ -76,7 +102,8 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>
           </CardFooter>

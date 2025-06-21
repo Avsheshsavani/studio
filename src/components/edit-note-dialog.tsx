@@ -19,7 +19,7 @@ interface EditNoteDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   note: Note | null;
-  onNoteUpdate: (note: Note) => void;
+  onNoteUpdate: (note: Note) => Promise<void>;
 }
 
 export function EditNoteDialog({
@@ -32,13 +32,14 @@ export function EditNoteDialog({
     return null;
   }
 
-  const handleSave = (updatedData: Partial<Note>) => {
+  const handleSave = async (updatedData: Partial<Note>) => {
+    if (!note) return;
     const updatedNote: Note = {
       ...note,
       ...updatedData,
       timestamp: Date.now(), // Update timestamp on edit
     };
-    onNoteUpdate(updatedNote);
+    await onNoteUpdate(updatedNote);
     setIsOpen(false);
   };
 

@@ -24,12 +24,12 @@ import FinancialNoteForm from "./forms/financial-note-form";
 import PhotoNoteForm from "./forms/photo-note-form";
 import ProtectedNoteForm from "./forms/protected-note-form";
 import SimpleNoteForm from "./forms/simple-note-form";
-import type { Note, NoteType } from "@/lib/types";
+import type { Note, NoteType, SimpleNote, PhotoNote, ProtectedNote, FinancialNote } from "@/lib/types";
 
 interface NewNoteDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onNoteCreate: (note: Note) => void;
+  onNoteCreate: (note: Omit<Note, 'id'>) => Promise<void>;
 }
 
 export function NewNoteDialog({
@@ -38,18 +38,38 @@ export function NewNoteDialog({
   onNoteCreate,
 }: NewNoteDialogProps) {
   
-  const handleSave = (noteData: Partial<Note>, type: NoteType) => {
-    const newNote: Note = {
-      id: `note-${Date.now()}`,
+  const handleSave = async (noteData: Partial<Note>, type: NoteType) => {
+    
+    // Base properties for any new note
+    const baseNote = {
       timestamp: noteData.timestamp || Date.now(),
       type: type,
       title: noteData.title || "Untitled",
       tags: noteData.tags || [],
-      // Type-specific properties
-      ...noteData,
-    } as Note;
+    };
 
-    onNoteCreate(newNote);
+    // This object will be one of the specific Omit<...Note, 'id'> types
+    let noteToCreate;
+
+    switch (type) {
+      case 'simple':
+        noteToCreate = { ...baseNote, type: 'simple', body: (noteData as Partial<SimpleNote>).body || '' };
+        break;
+      case 'photo':
+        noteToCreate = { ...baseNote, type: 'photo', imageUrl: (noteData as Partial<PhotoNote>).imageUrl || '', imageHint: (noteData as Partial<PhotoNote>).imageHint || '' };
+        break;
+      case 'protected':
+        noteToCreate = { ...baseNote, type: 'protected', body: (noteData as Partial<ProtectedNote>).body || '' };
+        break;
+      case 'financial':
+        noteToCreate = { ...baseNote, type: 'financial', transactions: (noteData as Partial<FinancialNote>).transactions || [], receiptImageUrl: (noteData as Partial<FinancialNote>).receiptImageUrl || '' };
+        break;
+      default:
+        console.error("Invalid note type");
+        return;
+    }
+
+    await onNoteCreate(noteToCreate);
     setIsOpen(false);
   };
 

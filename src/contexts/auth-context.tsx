@@ -8,62 +8,53 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
+import type { User } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase-config";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
-  isAuthenticated: boolean;
-  login: (pass: string) => boolean;
-  logout: () => void;
+  user: User | null;
   loading: boolean;
+  login: (email: string, pass: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const authStatus = localStorage.getItem("isAuthenticated");
-      if (authStatus === "true") {
-        setIsAuthenticated(true);
-      }
-    } catch (error) {
-        console.error("Could not access local storage:", error)
-    } finally {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
       setLoading(false);
-    }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
-  const login = (password: string) => {
-    // This is a mock login. In a real app, you'd verify credentials.
-    if (password === "password") {
-      try {
-        localStorage.setItem("isAuthenticated", "true");
-        setIsAuthenticated(true);
-        router.push("/");
-      } catch (error) {
-        console.error("Could not access local storage:", error)
-      }
-      return true;
-    }
-    return false;
+  const login = async (email: string, password: string) => {
+    // This will throw an error on failure, which is caught by the login page
+    await signInWithEmailAndPassword(auth, email, password);
+    router.push("/");
   };
 
-  const logout = () => {
-    try {
-      localStorage.removeItem("isAuthenticated");
-    } catch (error) {
-        console.error("Could not access local storage:", error)
-    } finally {
-        setIsAuthenticated(false);
-        router.push("/login");
-    }
+  const logout = async () => {
+    await signOut(auth);
+    router.push("/login");
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    })
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
