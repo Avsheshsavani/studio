@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -13,8 +13,21 @@ const firebaseConfig = {
   measurementId: "G-1QEEC4L0SL"
 };
 
-// Initialize Firebase using a more robust pattern
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Robust initialization to prevent re-initialization errors and ensure config is loaded.
+let app;
+try {
+    app = initializeApp(firebaseConfig);
+} catch (e: any) {
+    if (e.code === 'firebase/duplicate-app') {
+        // This can happen in development with hot-reloading.
+        app = getApp();
+    } else {
+        // Re-throw any other errors
+        console.error("Firebase initialization failed:", e);
+        throw e;
+    }
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
