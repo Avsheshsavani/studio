@@ -35,6 +35,7 @@ export interface FinancialTransaction {
 export interface FinancialNote extends BaseNote {
   type: "financial";
   transactions: FinancialTransaction[];
+  receiptImageUrl?: string;
 }
 
 export type Note = SimpleNote | ProtectedNote | PhotoNote | FinancialNote;

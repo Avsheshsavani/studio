@@ -20,11 +20,11 @@ import { Button } from "@/components/ui/button";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import type { Note } from "@/lib/types";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 
 interface NoteCardShellProps {
   note: Note;
   onDelete: (id: string) => void;
+  onEdit: (note: Note) => void;
   icon: React.ReactNode;
   children: React.ReactNode;
 }
@@ -32,11 +32,11 @@ interface NoteCardShellProps {
 export function NoteCardShell({
   note,
   onDelete,
+  onEdit,
   icon,
   children,
 }: NoteCardShellProps) {
   const [formattedDate, setFormattedDate] = useState("");
-  const { toast } = useToast();
 
   useEffect(() => {
     // This will only run on the client, after the initial render,
@@ -48,13 +48,6 @@ export function NoteCardShell({
       }).format(new Date(note.timestamp))
     );
   }, [note.timestamp]);
-
-  const handleEdit = () => {
-    toast({
-      title: "Feature Not Available",
-      description: `Editing notes is not yet implemented in this prototype.`,
-    });
-  };
 
   return (
     <Card className="flex h-full flex-col">
@@ -73,7 +66,7 @@ export function NoteCardShell({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleEdit}>
+            <DropdownMenuItem onClick={() => onEdit(note)}>
               <Pencil className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
@@ -90,7 +83,7 @@ export function NoteCardShell({
       </CardHeader>
       <CardContent className="flex-1">{children}</CardContent>
       {note.tags.length > 0 && (
-        <CardFooter className="flex flex-wrap gap-1">
+        <CardFooter className="flex flex-wrap gap-1 pt-4">
           {note.tags.map((tag) => (
             <Badge key={tag} variant="secondary">
               {tag}

@@ -13,6 +13,7 @@ import ProtectedNoteCard from "./notes/protected-note-card";
 import SimpleNoteCard from "./notes/simple-note-card";
 import { useAuth } from "@/contexts/auth-context";
 import { CategoryDirectory } from "./category-directory";
+import { EditNoteDialog } from "./edit-note-dialog";
 
 interface DashboardProps {
   initialNotes: Note[];
@@ -28,7 +29,9 @@ const categoryDetails: Record<NoteType, { name: string }> = {
 export function Dashboard({ initialNotes }: DashboardProps) {
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isNewNoteDialogOpen, setIsNewNoteDialogOpen] = useState(false);
+  const [isEditNoteDialogOpen, setIsEditNoteDialogOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<NoteType | null>(
     null
   );
@@ -36,12 +39,23 @@ export function Dashboard({ initialNotes }: DashboardProps) {
 
   const addNote = (note: Note) => {
     setNotes((prevNotes) => [note, ...prevNotes]);
-    setSelectedCategory(null);
+    // After adding, switch to the category of the new note
+    setSelectedCategory(note.type);
+  };
+
+  const updateNote = (updatedNote: Note) => {
+    setNotes(notes => notes.map(n => n.id === updatedNote.id ? updatedNote : n));
+    setEditingNote(null);
   };
 
   const deleteNote = (id: string) => {
     setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
   };
+  
+  const handleEditClick = (note: Note) => {
+    setEditingNote(note);
+    setIsEditNoteDialogOpen(true);
+  }
 
   const notesByCategory = useMemo(() => {
     return notes.reduce((acc, note) => {
@@ -78,6 +92,7 @@ export function Dashboard({ initialNotes }: DashboardProps) {
                     key={note.id}
                     note={note}
                     onDelete={deleteNote}
+                    onEdit={handleEditClick}
                   />
                 );
               case "protected":
@@ -86,6 +101,7 @@ export function Dashboard({ initialNotes }: DashboardProps) {
                     key={note.id}
                     note={note}
                     onDelete={deleteNote}
+                    onEdit={handleEditClick}
                   />
                 );
               case "photo":
@@ -94,6 +110,7 @@ export function Dashboard({ initialNotes }: DashboardProps) {
                     key={note.id}
                     note={note}
                     onDelete={deleteNote}
+                    onEdit={handleEditClick}
                   />
                 );
               case "financial":
@@ -102,6 +119,7 @@ export function Dashboard({ initialNotes }: DashboardProps) {
                     key={note.id}
                     note={note}
                     onDelete={deleteNote}
+                    onEdit={handleEditClick}
                   />
                 );
               default:
@@ -177,7 +195,7 @@ export function Dashboard({ initialNotes }: DashboardProps) {
           )}
         </div>
         <ThemeToggle />
-        <Button onClick={() => setIsDialogOpen(true)} className="gap-1">
+        <Button onClick={() => setIsNewNoteDialogOpen(true)} className="gap-1">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New Note</span>
         </Button>
@@ -193,9 +211,15 @@ export function Dashboard({ initialNotes }: DashboardProps) {
 
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         <NewNoteDialog
-          isOpen={isDialogOpen}
-          setIsOpen={setIsDialogOpen}
+          isOpen={isNewNoteDialogOpen}
+          setIsOpen={setIsNewNoteDialogOpen}
           onNoteCreate={addNote}
+        />
+        <EditNoteDialog
+            isOpen={isEditNoteDialogOpen}
+            setIsOpen={setIsEditNoteDialogOpen}
+            note={editingNote}
+            onNoteUpdate={updateNote}
         />
         {selectedCategory ? renderNotesGrid() : renderCategoryDirectories()}
       </main>

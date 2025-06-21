@@ -7,30 +7,28 @@ import type { SimpleNote } from "@/lib/types";
 import { useState } from "react";
 
 interface SimpleNoteFormProps {
-  onCreate: (note: SimpleNote) => void;
+  onSave: (noteData: Partial<SimpleNote>) => void;
+  note?: SimpleNote;
 }
 
-export default function SimpleNoteForm({ onCreate }: SimpleNoteFormProps) {
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [tags, setTags] = useState("");
+export default function SimpleNoteForm({ onSave, note }: SimpleNoteFormProps) {
+  const isEditMode = !!note;
+  const [title, setTitle] = useState(note?.title || "");
+  const [body, setBody] = useState(note?.body || "");
+  const [tags, setTags] = useState(note?.tags.join(", ") || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) return;
-    const newNote: SimpleNote = {
-      id: `note-${Date.now()}`,
-      type: "simple",
+    onSave({
       title,
       body,
       tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      timestamp: Date.now(),
-    };
-    onCreate(newNote);
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="simple-title">Title</Label>
         <Input
@@ -61,7 +59,7 @@ export default function SimpleNoteForm({ onCreate }: SimpleNoteFormProps) {
         />
       </div>
       <Button type="submit" className="w-full">
-        Create Note
+        {isEditMode ? "Save Changes" : "Create Note"}
       </Button>
     </form>
   );

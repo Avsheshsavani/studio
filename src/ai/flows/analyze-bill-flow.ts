@@ -28,7 +28,7 @@ const AnalyzeBillOutputSchema = z.object({
     .array(
       z.object({
         description: z.string().describe("The description of the purchased item."),
-        amount: z.number().describe("The price of the purchased item."),
+        amount: z.number().describe("The price of the purchased item. This should be a number only, without any currency symbols."),
       })
     )
     .describe("A list of all items purchased."),
@@ -43,13 +43,14 @@ const prompt = ai.definePrompt({
   name: 'analyzeBillPrompt',
   input: {schema: AnalyzeBillInputSchema},
   output: {schema: AnalyzeBillOutputSchema},
-  prompt: `You are an expert receipt processing agent.
-Your task is to analyze the provided image of a store receipt and extract key information.
+  prompt: `You are an expert receipt processing agent specializing in Indian receipts.
+Your task is to analyze the provided image of a store receipt and extract key information. The currency is Indian Rupees (INR).
 
 Please extract the following:
 1.  The name of the store.
 2.  The date of the transaction. Please provide it in YYYY-MM-DD format.
-3.  A list of all individual items purchased, along with their final price.
+3.  A list of all individual items purchased, along with their final price. The amount should be a number only, without any currency symbols.
+    - IMPORTANT: Pay close attention to the formatting of numbers. For example, if you see '630|-' or '630.00', the amount is 630.
 
 Return the extracted information in the required JSON format.
 

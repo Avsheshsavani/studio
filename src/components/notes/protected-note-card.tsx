@@ -1,6 +1,6 @@
 "use client";
 
-import type { ProtectedNote } from "@/lib/types";
+import type { ProtectedNote, Note } from "@/lib/types";
 import { Lock, Unlock, ShieldAlert } from "lucide-react";
 import { NoteCardShell } from "./note-card-shell";
 import { useState } from "react";
@@ -11,11 +11,13 @@ import { useToast } from "@/hooks/use-toast";
 interface ProtectedNoteCardProps {
   note: ProtectedNote;
   onDelete: (id: string) => void;
+  onEdit: (note: Note) => void;
 }
 
 export default function ProtectedNoteCard({
   note,
   onDelete,
+  onEdit,
 }: ProtectedNoteCardProps) {
   const [isLocked, setIsLocked] = useState(true);
   const [passkey, setPasskey] = useState("");
@@ -41,6 +43,7 @@ export default function ProtectedNoteCard({
     <NoteCardShell
       note={note}
       onDelete={onDelete}
+      onEdit={onEdit}
       icon={
         isLocked ? (
           <Lock className="w-5 h-5 text-muted-foreground" />

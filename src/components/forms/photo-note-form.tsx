@@ -7,37 +7,42 @@ import { UploadCloud } from "lucide-react";
 import { useState } from "react";
 
 interface PhotoNoteFormProps {
-  onCreate: (note: PhotoNote) => void;
+  onSave: (noteData: Partial<PhotoNote>) => void;
+  note?: PhotoNote;
 }
 
-export default function PhotoNoteForm({ onCreate }: PhotoNoteFormProps) {
-  const [title, setTitle] = useState("");
-  const [tags, setTags] = useState("");
-  const [fileName, setFileName] = useState("");
+export default function PhotoNoteForm({ onSave, note }: PhotoNoteFormProps) {
+  const isEditMode = !!note;
+  const [title, setTitle] = useState(note?.title || "");
+  const [tags, setTags] = useState(note?.tags.join(", ") || "");
+  const [fileName, setFileName] = useState(note?.imageUrl ? "existing_image.png" : "");
+  // In a real app, you'd handle file objects and uploads.
+  // For this prototype, we'll continue using a placeholder.
+  const [imageUrl, setImageUrl] = useState(note?.imageUrl || "https://placehold.co/600x400.png");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) return;
-    const newNote: PhotoNote = {
-      id: `note-${Date.now()}`,
-      type: "photo",
+
+    onSave({
       title,
-      imageUrl: "https://placehold.co/600x400.png",
-      imageHint: "abstract art",
+      imageUrl,
+      imageHint: "abstract art", // You could add a field for this
       tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      timestamp: Date.now(),
-    };
-    onCreate(newNote);
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFileName(e.target.files[0].name);
+      const file = e.target.files[0];
+      setFileName(file.name);
+      // Create a temporary URL to preview the image
+      setImageUrl(URL.createObjectURL(file));
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="photo-title">Title</Label>
         <Input
@@ -82,7 +87,7 @@ export default function PhotoNoteForm({ onCreate }: PhotoNoteFormProps) {
         />
       </div>
       <Button type="submit" className="w-full">
-        Create Photo Note
+        {isEditMode ? "Save Changes" : "Create Photo Note"}
       </Button>
     </form>
   );

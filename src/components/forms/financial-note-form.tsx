@@ -9,12 +9,14 @@ import { useState } from "react";
 import { analyzeBill } from "@/ai/flows/analyze-bill-flow";
 
 interface FinancialNoteFormProps {
-  onCreate: (note: FinancialNote) => void;
+  onSave: (noteData: Partial<FinancialNote>) => void;
+  note?: FinancialNote;
 }
 
-export default function FinancialNoteForm({ onCreate }: FinancialNoteFormProps) {
-  const [title, setTitle] = useState("");
-  const [tags, setTags] = useState("");
+export default function FinancialNoteForm({ onSave, note }: FinancialNoteFormProps) {
+  const isEditMode = !!note;
+  const [title, setTitle] = useState(note?.title || "");
+  const [tags, setTags] = useState(note?.tags.join(", ") || "");
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -25,8 +27,7 @@ export default function FinancialNoteForm({ onCreate }: FinancialNoteFormProps) 
     if (selectedFile) {
       setFile(selectedFile);
       setFileName(selectedFile.name);
-      // Clear title so it can be auto-filled by AI
-      setTitle("");
+      setTitle(""); // Clear title to be auto-filled by AI
     }
   };
 
@@ -42,7 +43,7 @@ export default function FinancialNoteForm({ onCreate }: FinancialNoteFormProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!file && !title) {
+    if (!isEditMode && !file && !title) {
       toast({
         variant: "destructive",
         title: "Missing Information",
@@ -51,48 +52,66 @@ export default function FinancialNoteForm({ onCreate }: FinancialNoteFormProps) 
       return;
     }
 
+    if (isEditMode && !title) {
+       toast({
+        variant: "destructive",
+        title: "Title Required",
+        description: "Please provide a title for the note.",
+      });
+      return;
+    }
+
+    // In edit mode, we just save the updated fields
+    if (isEditMode) {
+      onSave({
+        title,
+        tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+        // Transactions are edited in the detail view, not here.
+      });
+      return;
+    }
+
+    // Create mode logic
     setIsAnalyzing(true);
     try {
-      let noteTitle = title;
-      let transactions = [];
-      let noteTimestamp = Date.now();
+      let noteData: Partial<FinancialNote> = {
+        title,
+        tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+        transactions: [],
+      };
 
       if (file) {
         const photoDataUri = await fileToDataUri(file);
         const analysisResult = await analyzeBill({ photoDataUri });
         
-        noteTitle = analysisResult.storeName || "Analyzed Bill";
-        noteTimestamp = new Date(analysisResult.transactionDate).getTime() || Date.now();
-
-        transactions = analysisResult.items.map((item, index) => ({
+        const noteTimestamp = new Date(analysisResult.transactionDate).getTime() || Date.now();
+        const transactions = analysisResult.items.map((item, index) => ({
           id: `txn-${Date.now()}-${index}`,
           item: item.description,
-          category: "Analyzed", // Default category for AI-extracted items
+          category: "Analyzed", // Default category
           amount: item.amount,
           date: noteTimestamp,
         }));
+        
+        noteData.title = analysisResult.storeName || "Analyzed Bill";
+        noteData.transactions = transactions;
+        noteData.receiptImageUrl = photoDataUri;
+        noteData.timestamp = noteTimestamp;
 
         toast({
           title: "Analysis Complete",
           description: `Extracted ${transactions.length} items from the bill.`,
         });
       }
+      
+      onSave(noteData);
 
-      const newNote: FinancialNote = {
-        id: `note-${Date.now()}`,
-        type: "financial",
-        title: noteTitle,
-        tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-        timestamp: noteTimestamp,
-        transactions: transactions,
-      };
-      onCreate(newNote);
     } catch (error) {
       console.error("Failed to analyze bill:", error);
       toast({
         variant: "destructive",
         title: "Analysis Failed",
-        description: "Could not extract details from the bill. Please enter them manually or try another image.",
+        description: "Could not extract details. Please enter them manually or try another image.",
       });
     } finally {
       setIsAnalyzing(false);
@@ -100,44 +119,48 @@ export default function FinancialNoteForm({ onCreate }: FinancialNoteFormProps) 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-      <div className="space-y-2">
-        <Label>Upload a Bill (Optional)</Label>
-        <div className="flex items-center justify-center w-full">
-          <label
-            htmlFor="dropzone-file-bill"
-            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80"
-          >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground" />
-              <p className="mb-2 text-sm text-muted-foreground">
-                <span className="font-semibold">Click to upload</span> or drag and drop
-              </p>
-              {fileName && <p className="text-xs text-muted-foreground">{fileName}</p>}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {!isEditMode && (
+        <>
+          <div className="space-y-2">
+            <Label>Upload a Bill (Optional)</Label>
+            <div className="flex items-center justify-center w-full">
+              <label
+                htmlFor="dropzone-file-bill"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80"
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <UploadCloud className="w-8 h-8 mb-3 text-muted-foreground" />
+                  <p className="mb-2 text-sm text-muted-foreground">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  {fileName && <p className="text-xs text-muted-foreground">{fileName}</p>}
+                </div>
+                <input id="dropzone-file-bill" type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+              </label>
             </div>
-            <input id="dropzone-file-bill" type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
-          </label>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          If you upload a bill, we'll use AI to automatically fill in the details.
-        </p>
-      </div>
+            <p className="text-xs text-muted-foreground">
+              We'll use AI to automatically fill in the details.
+            </p>
+          </div>
 
-      <div className="relative flex items-center">
-        <div className="flex-grow border-t border-muted"></div>
-        <span className="flex-shrink mx-4 text-xs text-muted-foreground">OR</span>
-        <div className="flex-grow border-t border-muted"></div>
-      </div>
+          <div className="relative flex items-center">
+            <div className="flex-grow border-t border-muted"></div>
+            <span className="flex-shrink mx-4 text-xs text-muted-foreground">OR</span>
+            <div className="flex-grow border-t border-muted"></div>
+          </div>
+        </>
+      )}
       
       <div className="space-y-2">
         <Label htmlFor="financial-title">Title</Label>
         <Input
           id="financial-title"
-          placeholder="e.g. Monthly Budget, Vacation Costs"
+          placeholder="e.g. Monthly Budget"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          required={!file} // Title is required only if no file is uploaded
-          disabled={!!file} // Disable if a file is uploaded to use AI title
+          required={isEditMode || !file}
+          disabled={!isEditMode && !!file}
         />
       </div>
       <div className="space-y-2">
@@ -153,8 +176,10 @@ export default function FinancialNoteForm({ onCreate }: FinancialNoteFormProps) 
         {isAnalyzing ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Analyzing Bill...
+            Analyzing...
           </>
+        ) : isEditMode ? (
+          "Save Changes"
         ) : (
           "Create Financial Note"
         )}

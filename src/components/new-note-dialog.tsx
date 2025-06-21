@@ -24,7 +24,7 @@ import FinancialNoteForm from "./forms/financial-note-form";
 import PhotoNoteForm from "./forms/photo-note-form";
 import ProtectedNoteForm from "./forms/protected-note-form";
 import SimpleNoteForm from "./forms/simple-note-form";
-import type { Note } from "@/lib/types";
+import type { Note, NoteType } from "@/lib/types";
 
 interface NewNoteDialogProps {
   isOpen: boolean;
@@ -37,10 +37,22 @@ export function NewNoteDialog({
   setIsOpen,
   onNoteCreate,
 }: NewNoteDialogProps) {
-  const handleNoteCreate = (note: Note) => {
-    onNoteCreate(note);
+  
+  const handleSave = (noteData: Partial<Note>, type: NoteType) => {
+    const newNote: Note = {
+      id: `note-${Date.now()}`,
+      timestamp: noteData.timestamp || Date.now(),
+      type: type,
+      title: noteData.title || "Untitled",
+      tags: noteData.tags || [],
+      // Type-specific properties
+      ...noteData,
+    } as Note;
+
+    onNoteCreate(newNote);
     setIsOpen(false);
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -71,16 +83,16 @@ export function NewNoteDialog({
             </TabsTrigger>
           </TabsList>
           <TabsContent value="simple">
-            <SimpleNoteForm onCreate={handleNoteCreate} />
+            <SimpleNoteForm onSave={(data) => handleSave(data, "simple")} />
           </TabsContent>
           <TabsContent value="photo">
-            <PhotoNoteForm onCreate={handleNoteCreate} />
+            <PhotoNoteForm onSave={(data) => handleSave(data, "photo")} />
           </TabsContent>
           <TabsContent value="protected">
-            <ProtectedNoteForm onCreate={handleNoteCreate} />
+            <ProtectedNoteForm onSave={(data) => handleSave(data, "protected")} />
           </TabsContent>
           <TabsContent value="financial">
-            <FinancialNoteForm onCreate={handleNoteCreate} />
+            <FinancialNoteForm onSave={(data) => handleSave(data, "financial")} />
           </TabsContent>
         </Tabs>
       </DialogContent>
