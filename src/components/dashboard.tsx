@@ -1,6 +1,6 @@
 "use client";
 
-import { Feather, Plus, Search } from "lucide-react";
+import { Feather, Plus, Search, LogOut } from "lucide-react";
 import React, { useState, useMemo } from "react";
 import type { Note } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import FinancialNoteCard from "./notes/financial-note-card";
 import PhotoNoteCard from "./notes/photo-note-card";
 import ProtectedNoteCard from "./notes/protected-note-card";
 import SimpleNoteCard from "./notes/simple-note-card";
+import { useAuth } from "@/contexts/auth-context";
 
 interface DashboardProps {
   initialNotes: Note[];
@@ -20,6 +21,7 @@ export function Dashboard({ initialNotes }: DashboardProps) {
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { logout } = useAuth();
 
   const addNote = (note: Note) => {
     setNotes((prevNotes) => [note, ...prevNotes]);
@@ -62,6 +64,9 @@ export function Dashboard({ initialNotes }: DashboardProps) {
         <Button onClick={() => setIsDialogOpen(true)} className="gap-1">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New Note</span>
+        </Button>
+        <Button onClick={logout} variant="outline" size="icon" aria-label="Log out">
+          <LogOut className="h-4 w-4" />
         </Button>
       </header>
 
