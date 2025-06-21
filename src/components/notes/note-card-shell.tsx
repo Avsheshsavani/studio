@@ -13,12 +13,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import type { Note } from "@/lib/types";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface NoteCardShellProps {
   note: Note;
@@ -34,6 +36,7 @@ export function NoteCardShell({
   children,
 }: NoteCardShellProps) {
   const [formattedDate, setFormattedDate] = useState("");
+  const { toast } = useToast();
 
   useEffect(() => {
     // This will only run on the client, after the initial render,
@@ -46,10 +49,17 @@ export function NoteCardShell({
     );
   }, [note.timestamp]);
 
+  const handleEdit = () => {
+    toast({
+      title: "Edit Action",
+      description: `Editing for "${note.title}" is a work in progress.`,
+    });
+  };
+
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="flex h-full flex-col">
       <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted flex-shrink-0">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
           {icon}
         </div>
         <div className="flex-1">
@@ -63,6 +73,11 @@ export function NoteCardShell({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleEdit}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => onDelete(note.id)}
