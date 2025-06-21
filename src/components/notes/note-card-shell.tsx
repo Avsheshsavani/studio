@@ -51,8 +51,8 @@ export function NoteCardShell({
 
   const handleEdit = () => {
     toast({
-      title: "Edit Action",
-      description: `Editing for "${note.title}" is a work in progress.`,
+      title: "Feature Not Available",
+      description: `Editing notes is not yet implemented in this prototype.`,
     });
   };
 
