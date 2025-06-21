@@ -15,17 +15,11 @@ export default function ProtectedNoteForm({ onSave, note }: ProtectedNoteFormPro
   const isEditMode = !!note;
   const [title, setTitle] = useState(note?.title || "");
   const [body, setBody] = useState(note?.body || "");
-  const [passkey, setPasskey] = useState("");
   const [tags, setTags] = useState(note?.tags.join(", ") || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) return;
-    if (!isEditMode && !passkey) {
-        // Passkey is required for new notes
-        alert("Passkey is required to create a protected note.");
-        return;
-    }
     
     onSave({
       title,
@@ -45,22 +39,6 @@ export default function ProtectedNoteForm({ onSave, note }: ProtectedNoteFormPro
           onChange={(e) => setTitle(e.target.value)}
           required
         />
-      </div>
-       <div className="space-y-2">
-        <Label htmlFor="protected-passkey">Passkey</Label>
-        <Input
-          id="protected-passkey"
-          type="password"
-          placeholder={isEditMode ? "Enter passkey to re-encrypt/save" : "Enter a passkey to encrypt"}
-          value={passkey}
-          onChange={(e) => setPasskey(e.target.value)}
-          required={!isEditMode}
-        />
-         <p className="text-xs text-muted-foreground">
-            {isEditMode 
-            ? "Leave blank to keep existing encryption. Enter a new passkey to re-encrypt."
-            : "Uses AES encryption with a key derived from your passkey (PBKDF2)."}
-          </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="protected-body">Body</Label>

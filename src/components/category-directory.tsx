@@ -1,10 +1,12 @@
+"use client";
+
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Folder } from "lucide-react";
+import { Folder, Lock } from "lucide-react";
 import type { NoteType } from "@/lib/types";
 
 const categoryDetails: Record<NoteType, { name: string }> = {
@@ -18,12 +20,14 @@ interface CategoryDirectoryProps {
   category: NoteType;
   noteCount: number;
   onClick: () => void;
+  isLocked?: boolean;
 }
 
 export function CategoryDirectory({
   category,
   noteCount,
   onClick,
+  isLocked,
 }: CategoryDirectoryProps) {
   const details = categoryDetails[category];
 
@@ -34,7 +38,11 @@ export function CategoryDirectory({
     >
       <CardHeader className="flex flex-row items-center gap-4 space-y-0">
         <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-muted">
-          <Folder className="h-6 w-6 text-primary" />
+          {isLocked ? (
+            <Lock className="h-6 w-6 text-primary" />
+          ) : (
+            <Folder className="h-6 w-6 text-primary" />
+          )}
         </div>
         <div className="flex-1">
           <CardTitle>{details.name}</CardTitle>

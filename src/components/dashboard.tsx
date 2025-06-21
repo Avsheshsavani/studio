@@ -16,6 +16,18 @@ import { CategoryDirectory } from "./category-directory";
 import { EditNoteDialog } from "./edit-note-dialog";
 import { getNotes, addNote as addNoteToDb, updateNote as updateNoteInDb, deleteNote as deleteNoteFromDb } from "@/services/note-service";
 import { Skeleton } from "./ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
+import { Label } from "./ui/label";
 
 const categoryDetails: Record<NoteType, { name: string }> = {
   simple: { name: "Simple Notes" },
@@ -46,6 +58,11 @@ export function Dashboard() {
     null
   );
 
+  const [isProtectedCategoryLocked, setIsProtectedCategoryLocked] = useState(true);
+  const [isPasskeyDialogOpen, setIsPasskeyDialogOpen] = useState(false);
+  const [passkeyInput, setPasskeyInput] = useState("");
+  const { toast } = useToast();
+
   useEffect(() => {
     if (user) {
       const fetchNotes = async () => {
@@ -67,7 +84,10 @@ export function Dashboard() {
   const addNote = async (note: Omit<Note, 'id'>) => {
     const newNote = await addNoteToDb(note);
     setNotes((prevNotes) => [newNote, ...prevNotes]);
-    // After adding, switch to the category of the new note
+    // If adding a protected note, unlock the category and switch to it
+    if (newNote.type === 'protected' && isProtectedCategoryLocked) {
+      setIsProtectedCategoryLocked(false);
+    }
     setSelectedCategory(newNote.type);
   };
 
@@ -86,6 +106,32 @@ export function Dashboard() {
     setEditingNote(note);
     setIsEditNoteDialogOpen(true);
   }
+
+  const handleProtectedCategoryClick = () => {
+    if (isProtectedCategoryLocked) {
+      setPasskeyInput("");
+      setIsPasskeyDialogOpen(true);
+    } else {
+      setSelectedCategory("protected");
+    }
+  };
+
+  const handleUnlockProtected = () => {
+    // In a real app, this would involve decryption.
+    // Here we just check a dummy password.
+    if (passkeyInput === "password") {
+      setIsProtectedCategoryLocked(false);
+      setSelectedCategory("protected");
+      setIsPasskeyDialogOpen(false);
+      toast({ title: "Access Granted", description: "Protected notes unlocked." });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "The passkey you entered is incorrect.",
+      });
+    }
+  };
 
   const notesByCategory = useMemo(() => {
     return notes.reduce((acc, note) => {
@@ -190,10 +236,11 @@ export function Dashboard() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {(Object.keys(categoryDetails) as NoteType[]).map((category) => (
             <CategoryDirectory
-            key={category}
-            category={category}
-            noteCount={(notesByCategory[category] || []).length}
-            onClick={() => setSelectedCategory(category)}
+              key={category}
+              category={category}
+              noteCount={(notesByCategory[category] || []).length}
+              onClick={category === 'protected' ? handleProtectedCategoryClick : () => setSelectedCategory(category)}
+              isLocked={category === 'protected' && isProtectedCategoryLocked}
             />
         ))}
         </div>
@@ -209,6 +256,9 @@ export function Dashboard() {
             size="icon"
             className="mr-2"
             onClick={() => {
+              if (selectedCategory === 'protected') {
+                setIsProtectedCategoryLocked(true);
+              }
               setSelectedCategory(null);
               setSearchQuery("");
             }}
@@ -268,6 +318,35 @@ export function Dashboard() {
         />
         {selectedCategory ? renderNotesGrid() : renderCategoryDirectories()}
       </main>
+
+      <AlertDialog open={isPasskeyDialogOpen} onOpenChange={setIsPasskeyDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enter Passkey</AlertDialogTitle>
+            <AlertDialogDescription>
+              This category is protected. Please enter the passkey to view its contents.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Label htmlFor="passkey-input" className="sr-only">
+              Passkey
+            </Label>
+            <Input
+              id="passkey-input"
+              type="password"
+              placeholder="Enter passkey..."
+              value={passkeyInput}
+              onChange={(e) => setPasskeyInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleUnlockProtected(); }}}
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleUnlockProtected(); }}>Unlock</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
