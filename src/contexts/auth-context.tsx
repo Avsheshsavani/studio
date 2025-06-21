@@ -9,7 +9,13 @@ import React, {
   type ReactNode,
 } from "react";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase-config";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +23,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -27,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  const googleProvider = new GoogleAuthProvider();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -44,17 +52,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/");
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      router.push("/");
+    } catch (error) {
+      console.error("Google Sign-In Error", error);
+      toast({
+        variant: "destructive",
+        title: "Google Sign-In Failed",
+        description: "Could not sign in with Google. Please try again.",
+      });
+    }
+  };
+
   const logout = async () => {
     await signOut(auth);
     router.push("/login");
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
-    })
+    });
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, loginWithGoogle, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
